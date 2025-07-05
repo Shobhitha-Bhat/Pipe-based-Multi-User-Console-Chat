@@ -9,22 +9,53 @@ a structure definition containing client info like - username ,
                                           any extra info
 =====================
 
+
+
+function1(){
+            while(true){
+                read( fd2,  " the content that server broadcasted")
+
+                // sleep(1)
+            }
+}
+
+
+
 main{
 
-ask user for client name
+i) ask user for client name
 
-put that info the struct
+ii) put that info the struct
 
-open regpipe and notify itself
-wait till it gets acknowledgement from server to proceed with chatting
+iii) open regpipe and notify itself to the server
+iv) wait till it gets acknowledgement from server to proceed with chatting
 
 once acknowledged,
-loop(){
-    client can have 2 possibilities:
-                   -> write to server ie, chat with others
-                    ->read from the server ie., read messages of others
+
+    int fd1 = open( client to server pipe )
+    int fd2 = open(server to client pipe)
+
+v)  pthread( read from server for other client messages , function1())
+
+vi) loop(){
+       
+        fgets( get input from stdin )
+
+        if( strcmp(msg == "/exit") ){
+        write( fd1, " client is leaving ")
+        close(client to server pipe )
+        close(server to client pipe)
+        unlink(client to server pipe )
+        unlink(server to client pipe)
+
+        exit(0)
+        }
+
+        write(fd1, " the text that user entered")                
                     
 }
 
 } 
+
+
 */
