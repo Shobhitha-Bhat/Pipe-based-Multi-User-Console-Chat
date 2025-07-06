@@ -67,6 +67,8 @@ vi) loop(){
 #include <unistd.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <errno.h>
+#include <sys/stat.h>
 
 typedef struct {
     char username[100];
@@ -74,7 +76,7 @@ typedef struct {
     char pipe_s2c[256];
 } Client;
 
-int fd2; 
+int fd2; // global read end from server
 
 void* read_from_server(void* arg) {
     char buffer[1024];
@@ -83,6 +85,11 @@ void* read_from_server(void* arg) {
         if (n > 0) {
             buffer[n] = '\0';
             printf("Server: %s", buffer);
+        } else if (n == 0) {
+            printf("\n[Server disconnected. Exiting...]\n");
+            exit(0);
+        } else {
+            perror("Error reading from server");
         }
     }
     return NULL;
@@ -90,43 +97,94 @@ void* read_from_server(void* arg) {
 
 int main() {
     Client client;
+
+    // Get the username
     printf("Enter your username: ");
-    fgets(client.username, sizeof(client.username), stdin);
-    client.username[strcspn(client.username, "\n")] = '\0'; 
+    if (fgets(client.username, sizeof(client.username), stdin) == NULL) {
+        fprintf(stderr, "Failed to read username.\n");
+        exit(EXIT_FAILURE);
+    }
+    client.username[strcspn(client.username, "\n")] = '\0'; // remove newline
 
-    sprintf(client.pipe_c2s, "./Pipes/%s_to_s", client.username);
-    sprintf(client.pipe_s2c, "./Pipes/server_to_%s", client.username);
+    if (strlen(client.username) == 0) {
+        fprintf(stderr, "Username cannot be empty.\n");
+        exit(EXIT_FAILURE);
+    }
 
+    // Create FIFO pipe paths
+    snprintf(client.pipe_c2s, sizeof(client.pipe_c2s), "./Pipes/%s_to_server", client.username);
+    snprintf(client.pipe_s2c, sizeof(client.pipe_s2c), "./Pipes/server_to_%s", client.username);
 
+    // Get registration pipe from environment
     const char* regpipe = getenv("REGPIPE");
-    
+    if (!regpipe) {
+        fprintf(stderr, "Environment variable REGPIPE not set.\n");
+        exit(EXIT_FAILURE);
+    }
 
+    // Register client
     int reg_fd = open(regpipe, O_WRONLY);
+    if (reg_fd < 0) {
+        perror("Error opening registration pipe");
+        exit(EXIT_FAILURE);
+    }
 
-    write(reg_fd, client.username, strlen(client.username));
-    write(reg_fd, "\n", 1);
+    if (write(reg_fd, client.username, strlen(client.username)) < 0 ||
+        write(reg_fd, "\n", 1) < 0) {
+        perror("Error writing to registration pipe");
+        close(reg_fd);
+        exit(EXIT_FAILURE);
+    }
     close(reg_fd);
+    printf("[Registered successfully]\n");
 
+    // Open client-to-server and server-to-client FIFOs
     int fd1 = open(client.pipe_c2s, O_WRONLY);
-    fd2 = open(client.pipe_s2c, O_RDONLY);
+    if (fd1 < 0) {
+        perror("Error opening pipe to server");
+        exit(EXIT_FAILURE);
+    }
 
+    fd2 = open(client.pipe_s2c, O_RDONLY);
+    if (fd2 < 0) {
+        perror("Error opening pipe from server");
+        close(fd1);
+        exit(EXIT_FAILURE);
+    }
+
+    printf("[Connected to chat server. Type messages or /exit to quit]\n");
+
+    // Start thread to read messages from server
     pthread_t tid;
-    pthread_create(&tid, NULL, read_from_server, NULL);
+    if (pthread_create(&tid, NULL, read_from_server, NULL) != 0) {
+        perror("Failed to create thread");
+        close(fd1);
+        close(fd2);
+        exit(EXIT_FAILURE);
+    }
 
     char msg[1024];
     while (1) {
-        fgets(msg, sizeof(msg), stdin);
+        if (fgets(msg, sizeof(msg), stdin) == NULL) {
+            printf("[Input error. Exiting...]\n");
+            break;
+        }
 
         if (strcmp(msg, "/exit\n") == 0) {
-            write(fd1, "Client is leaving\n", 19);
+            const char* leave_msg = "Client is leaving\n";
+            write(fd1, leave_msg, strlen(leave_msg));
+
             close(fd1);
             close(fd2);
             unlink(client.pipe_c2s);
             unlink(client.pipe_s2c);
+            printf("[Disconnected and cleaned up]\n");
             exit(0);
         }
 
-        write(fd1, msg, strlen(msg));
+        if (write(fd1, msg, strlen(msg)) < 0) {
+            perror("Error writing to server");
+        }
     }
 
     return 0;
