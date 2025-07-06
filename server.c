@@ -1,0 +1,21 @@
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <poll.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#define MAX_MSG 256
+#define BASE_FIFO_DIR "/tmp/chat_pipes"
+
+struct Client {
+    char id[50];
+    int rfd;
+    int wfd;
+    int active;
+};
+
+struct Client* clients = NULL;
+struct pollfd* fds = NULL;
+int client_count = 0;
