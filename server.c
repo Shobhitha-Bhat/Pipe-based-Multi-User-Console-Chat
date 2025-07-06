@@ -68,8 +68,10 @@ void add_client(const char* client_id) {
     fds = realloc(fds, sizeof(struct pollfd) * (client_count + 2)); // +1 for reg_fd
 
     char to_server[100], to_client[100];
-    snprintf(to_server, sizeof(to_server), "%s/%s_to_server", get_fifo_dir(), client_id);
-    snprintf(to_client, sizeof(to_client), "%s/server_to_%s", get_fifo_dir(), client_id);
+    const char* base_dir = get_fifo_dir();
+    snprintf(to_server, sizeof(to_server), "%s/%s_to_server", base_dir, client_id);
+    snprintf(to_client, sizeof(to_client), "%s/server_to_%s", base_dir, client_id);
+
 
     create_fifo(to_server);
     create_fifo(to_client);
