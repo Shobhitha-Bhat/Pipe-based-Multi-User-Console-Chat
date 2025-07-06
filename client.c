@@ -70,6 +70,8 @@ vi) loop(){
 #include <errno.h>
 #include <sys/stat.h>
 
+#define BASE_FIFO_DIR "/tmp/chat_pipes"
+
 typedef struct {
     char username[100];
     char pipe_c2s[256];
@@ -111,21 +113,32 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    
     // Create FIFO pipe paths
-    snprintf(client.pipe_c2s, sizeof(client.pipe_c2s), "./Pipes/%s_to_server", client.username);
-    snprintf(client.pipe_s2c, sizeof(client.pipe_s2c), "./Pipes/server_to_%s", client.username);
+    snprintf(client.pipe_c2s, sizeof(client.pipe_c2s), "%s/%s_to_server", BASE_FIFO_DIR,client.username);
+    snprintf(client.pipe_s2c, sizeof(client.pipe_s2c), "%s/server_to_%s",BASE_FIFO_DIR, client.username);
 
-    // Get registration pipe from environment
-    const char* regpipe = getenv("REGPIPE");
-    if (!regpipe) {
-        fprintf(stderr, "Environment variable REGPIPE not set.\n");
-        exit(EXIT_FAILURE);
-    }
+    // // Get registration pipe from environment
+    // const char* regpipe = getenv("REGPIPE");
+    // if (!regpipe) {
+    //     fprintf(stderr, "Environment variable REGPIPE not set.\n");
+    //     exit(EXIT_FAILURE);
+    // }
 
-    // Register client
-    int reg_fd = open(regpipe, O_WRONLY);
+    // // Register client
+    // int reg_fd = open(regpipe, O_WRONLY);
+    // if (reg_fd < 0) {
+    //     perror("Error opening registration pipe");
+    //     exit(EXIT_FAILURE);
+    // }
+
+
+    char reg_fifo_path[100];
+    snprintf(reg_fifo_path, sizeof(reg_fifo_path), "%s/registration_fifo", BASE_FIFO_DIR);
+
+    int reg_fd = open(reg_fifo_path, O_WRONLY);
     if (reg_fd < 0) {
-        perror("Error opening registration pipe");
+        perror("open registration_fifo");
         exit(EXIT_FAILURE);
     }
 
@@ -136,23 +149,40 @@ int main() {
         exit(EXIT_FAILURE);
     }
     close(reg_fd);
-    printf("[Registered successfully]\n");
-
+    
+    
+    
+    
+    while (access(client.pipe_c2s, F_OK) == -1 || access(client.pipe_s2c, F_OK) == -1) {
+        sleep(1); // wait 0.1 seconds
+    }
+    
+     fd2 = open(client.pipe_s2c, O_RDONLY);  // server_to_<id>
+    // if (fd2 < 0) {
+    //     perror("Error opening pipe from server");
+    //     close(fd1);
+    //     exit(EXIT_FAILURE);
+    // }
+    char buf[100];
+    read(fd2, buf, sizeof(buf));  // should get "READY\n"
+    if (strncmp(buf, "READY\n", 6) == 0) {
+         ;
+    }else{
+        printf("no reply from server");
+        exit(EXIT_FAILURE);
+    }
+    
     // Open client-to-server and server-to-client FIFOs
     int fd1 = open(client.pipe_c2s, O_WRONLY);
     if (fd1 < 0) {
         perror("Error opening pipe to server");
         exit(EXIT_FAILURE);
     }
-
-    fd2 = open(client.pipe_s2c, O_RDONLY);
-    if (fd2 < 0) {
-        perror("Error opening pipe from server");
-        close(fd1);
-        exit(EXIT_FAILURE);
-    }
-
-    printf("[Connected to chat server. Type messages or /exit to quit]\n");
+    
+    // fd2 = open(client.pipe_s2c, O_RDONLY);
+    
+    printf("[Registered successfully]\n");
+    printf("[Connected to chat server. Type messages or /exit to quit\n");
 
     // Start thread to read messages from server
     pthread_t tid;

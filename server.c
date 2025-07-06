@@ -5,6 +5,9 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
 
 #define MAX_MSG 256
 const char* get_fifo_dir() {
@@ -77,6 +80,10 @@ void add_client(const char* client_id) {
     create_fifo(to_client);
 
     int rfd = open(to_server, O_RDONLY | O_NONBLOCK);
+
+    // Prevent blocking on open(to_client, O_WRONLY)
+int dummy_fd = open(to_client, O_RDONLY | O_NONBLOCK);
+
     int wfd = open(to_client, O_WRONLY);
 
     if (rfd < 0 || wfd < 0) {
@@ -134,6 +141,8 @@ int main() {
             int bytes = read(reg_fd, client_id, sizeof(client_id) - 1);
             if (bytes > 0) {
                 client_id[bytes] = '\0';
+
+                client_id[strcspn(client_id, "\n")] = '\0';
 
                 if (is_duplicate_client(client_id)) {
                     printf("[SERVER] Duplicate client '%s' ignored.\n", client_id);
