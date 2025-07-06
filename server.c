@@ -7,7 +7,11 @@
 #include <sys/stat.h>
 
 #define MAX_MSG 256
-#define BASE_FIFO_DIR "/tmp/chat_pipes"
+const char* get_fifo_dir() {
+    const char* env_dir = getenv("CHAT_PIPE_DIR");
+    return (env_dir && strlen(env_dir) > 0) ? env_dir : "/tmp/chat_pipes";
+}
+
 
 struct Client {
     char id[50];
@@ -64,8 +68,8 @@ void add_client(const char* client_id) {
     fds = realloc(fds, sizeof(struct pollfd) * (client_count + 2)); // +1 for reg_fd
 
     char to_server[100], to_client[100];
-    snprintf(to_server, sizeof(to_server), "%s/%s_to_server", BASE_FIFO_DIR, client_id);
-    snprintf(to_client, sizeof(to_client), "%s/server_to_%s", BASE_FIFO_DIR, client_id);
+    snprintf(to_server, sizeof(to_server), "%s/%s_to_server", get_fifo_dir(), client_id);
+    snprintf(to_client, sizeof(to_client), "%s/server_to_%s", get_fifo_dir(), client_id);
 
     create_fifo(to_server);
     create_fifo(to_client);
@@ -94,11 +98,11 @@ void add_client(const char* client_id) {
 
 int main() {
     // Step 1: Ensure the base directory exists
-    ensure_dir_exists(BASE_FIFO_DIR);
+    ensure_dir_exists(get_fifo_dir());
 
     // Step 2: Create and open the registration FIFO
     char reg_fifo_path[100];
-    snprintf(reg_fifo_path, sizeof(reg_fifo_path), "%s/registration_fifo", BASE_FIFO_DIR);
+    snprintf(reg_fifo_path, sizeof(reg_fifo_path), "%s/registration_fifo", get_fifo_dir());
     create_fifo(reg_fifo_path);
 
     int reg_fd = open(reg_fifo_path, O_RDONLY | O_NONBLOCK);
