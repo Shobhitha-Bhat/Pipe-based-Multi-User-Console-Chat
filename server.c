@@ -56,3 +56,38 @@ void broadcast(const char *msg, const char *sender_id) {
         }
     }
 }
+
+
+// Add a new client dynamically
+void add_client(const char* client_id) {
+    clients = realloc(clients, sizeof(struct Client) * (client_count + 1));
+    fds = realloc(fds, sizeof(struct pollfd) * (client_count + 2)); // +1 for reg_fd
+
+    char to_server[100], to_client[100];
+    snprintf(to_server, sizeof(to_server), "%s/%s_to_server", BASE_FIFO_DIR, client_id);
+    snprintf(to_client, sizeof(to_client), "%s/server_to_%s", BASE_FIFO_DIR, client_id);
+
+    create_fifo(to_server);
+    create_fifo(to_client);
+
+    int rfd = open(to_server, O_RDONLY | O_NONBLOCK);
+    int wfd = open(to_client, O_WRONLY);
+
+    if (rfd < 0 || wfd < 0) {
+        perror("open client FIFO");
+        return;
+    }
+
+    write(wfd, "READY\n", 6);
+
+    strcpy(clients[client_count].id, client_id);
+    clients[client_count].rfd = rfd;
+    clients[client_count].wfd = wfd;
+    clients[client_count].active = 1;
+
+    fds[client_count + 1].fd = rfd;
+    fds[client_count + 1].events = POLLIN;
+
+    printf("[SERVER] Added client: %s\n", client_id);
+    client_count++;
+}
