@@ -71,6 +71,10 @@ vi) loop(){
 #include <sys/stat.h>
 
 #define BASE_FIFO_DIR "/tmp/chat_pipes"
+const char* get_fifo_dir() {
+    const char* env_dir = getenv("CHAT_PIPE_DIR");
+    return (env_dir && strlen(env_dir) > 0) ? env_dir : "/tmp/chat_pipes";
+}
 
 typedef struct {
     char username[100];
@@ -115,8 +119,8 @@ int main() {
 
     
     // Create FIFO pipe paths
-    snprintf(client.pipe_c2s, sizeof(client.pipe_c2s), "%s/%s_to_server", BASE_FIFO_DIR,client.username);
-    snprintf(client.pipe_s2c, sizeof(client.pipe_s2c), "%s/server_to_%s",BASE_FIFO_DIR, client.username);
+    snprintf(client.pipe_c2s, sizeof(client.pipe_c2s), "%s/%s_to_server", get_fifo_dir(),client.username);
+    snprintf(client.pipe_s2c, sizeof(client.pipe_s2c), "%s/server_to_%s",get_fifo_dir(), client.username);
 
     // // Get registration pipe from environment
     // const char* regpipe = getenv("REGPIPE");
@@ -134,7 +138,7 @@ int main() {
 
 
     char reg_fifo_path[100];
-    snprintf(reg_fifo_path, sizeof(reg_fifo_path), "%s/registration_fifo", BASE_FIFO_DIR);
+    snprintf(reg_fifo_path, sizeof(reg_fifo_path), "%s/registration_fifo", get_fifo_dir());
 
     int reg_fd = open(reg_fifo_path, O_WRONLY);
     if (reg_fd < 0) {
