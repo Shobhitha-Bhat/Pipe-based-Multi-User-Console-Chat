@@ -30,3 +30,21 @@ void ensure_dir_exists(const char *path) {
     }
 }
 
+// Create a FIFO at a specific path
+void create_fifo(const char *path) {
+    unlink(path); // Remove if already exists
+    if (mkfifo(path, 0666) == -1 && errno != EEXIST) {
+        perror("mkfifo");
+        exit(EXIT_FAILURE);
+    }
+}
+
+int is_duplicate_client(const char* client_id) {
+    for (int i = 0; i < client_count; i++) {
+        if (clients[i].active && strcmp(clients[i].id, client_id) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
