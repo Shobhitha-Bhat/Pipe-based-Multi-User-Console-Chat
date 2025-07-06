@@ -29,3 +29,4 @@ void ensure_dir_exists(const char *path) {
         }
     }
 }
+
