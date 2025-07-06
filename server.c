@@ -39,3 +39,12 @@ void create_fifo(const char *path) {
     }
 }
 
+int is_duplicate_client(const char* client_id) {
+    for (int i = 0; i < client_count; i++) {
+        if (clients[i].active && strcmp(clients[i].id, client_id) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
