@@ -30,3 +30,12 @@ void ensure_dir_exists(const char *path) {
     }
 }
 
+// Create a FIFO at a specific path
+void create_fifo(const char *path) {
+    unlink(path); // Remove if already exists
+    if (mkfifo(path, 0666) == -1 && errno != EEXIST) {
+        perror("mkfifo");
+        exit(EXIT_FAILURE);
+    }
+}
+
