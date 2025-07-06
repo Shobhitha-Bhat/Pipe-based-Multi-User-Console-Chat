@@ -19,3 +19,13 @@ struct Client {
 struct Client* clients = NULL;
 struct pollfd* fds = NULL;
 int client_count = 0;
+
+void ensure_dir_exists(const char *path) {
+    struct stat st = {0};
+    if (stat(path, &st) == -1) {
+        if (mkdir(path, 0777) == -1) {
+            perror("mkdir failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+}
