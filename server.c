@@ -143,8 +143,15 @@ int main() {
             int bytes = read(reg_fd, client_id, sizeof(client_id) - 1);
             if (bytes > 0) {
                 client_id[bytes] = '\0';
-
                 client_id[strcspn(client_id, "\n")] = '\0';
+
+                while (strlen(client_id) > 0 && (client_id[strlen(client_id) - 1] == ' ' || client_id[strlen(client_id) - 1] == '\t'))
+                client_id[strlen(client_id) - 1] = '\0';
+
+                if (strlen(client_id) == 0) {
+                // printf("[SERVER] Ignored empty client ID\n");
+                continue;
+                }
 
                 if (is_duplicate_client(client_id)) {
                     printf("[SERVER] Duplicate client '%s' ignored.\n", client_id);
