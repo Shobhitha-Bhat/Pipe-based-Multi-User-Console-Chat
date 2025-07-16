@@ -70,6 +70,8 @@ vi) loop(){
 #include <errno.h>
 #include <sys/stat.h>
 
+
+
 #define BASE_FIFO_DIR "/tmp/chat_pipes"
 const char* get_fifo_dir() {
     const char* env_dir = getenv("CHAT_PIPE_DIR");
@@ -83,6 +85,7 @@ typedef struct {
 } Client;
 
 int fd2; // global read end from server
+int server_stopped=0;
 
 void* read_from_server(void* arg) {
     char buffer[1024];
@@ -93,6 +96,7 @@ void* read_from_server(void* arg) {
             printf("%s", buffer);
         } else if (n == 0) {
             printf("\n[Server disconnected. Exiting...]\n");
+            server_stopped=1;
             exit(0);
         } else {
             perror("Error reading from server");
@@ -198,8 +202,8 @@ int main() {
     }
 
     char msg[1024];
-    while (1) {
-        if (fgets(msg, sizeof(msg), stdin) == NULL) {
+    while (!server_stopped) {
+        if (!(server_stopped) && fgets(msg, sizeof(msg), stdin) == NULL ) {
             printf("[Input error. Exiting...]\n");
             break;
         }
@@ -219,7 +223,15 @@ int main() {
         if (write(fd1, msg, strlen(msg)) < 0) {
             perror("Error writing to server");
         }
-    }
 
-    return 0;
+       
+    }
+            close(fd1);
+            close(fd2);
+            unlink(client.pipe_c2s);
+            unlink(client.pipe_s2c);
+            printf("[Disconnected and cleaned up]\n");
+            exit(0);
+
+    // return 0;
 }
