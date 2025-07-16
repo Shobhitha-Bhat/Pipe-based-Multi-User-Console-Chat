@@ -175,7 +175,11 @@ int main() {
     read(fd2, buf, sizeof(buf));  // should get "READY\n"
     if (strncmp(buf, "READY\n", 6) == 0) {
          ;
-    }else{
+    }else if(strncmp(buf, "Duplicate Client\n", 18) == 0){
+        printf("Duplicate Client. Exiting...\n");
+        exit(EXIT_FAILURE);
+    }
+    else{
         printf("no reply from server");
         exit(EXIT_FAILURE);
     }
@@ -190,7 +194,7 @@ int main() {
     // fd2 = open(client.pipe_s2c, O_RDONLY);
     
     printf("[Registered successfully]\n");
-    printf("[Connected to chat server. Type messages or /exit to quit\n");
+    printf("[Connected to chat server. Type messages or /exit to quit]\n");
 
     // Start thread to read messages from server
     pthread_t tid;
@@ -231,7 +235,8 @@ int main() {
             unlink(client.pipe_c2s);
             unlink(client.pipe_s2c);
             printf("[Disconnected and cleaned up]\n");
-            exit(0);
+        
+            
 
     // return 0;
 }

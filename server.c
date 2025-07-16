@@ -84,9 +84,13 @@ void add_client(const char* client_id) {
     int rfd = open(to_server, O_RDONLY | O_NONBLOCK);
 
     // Prevent blocking on open(to_client, O_WRONLY)
-int dummy_fd = open(to_client, O_RDONLY | O_NONBLOCK);
-
+    int dummy_fd = open(to_client, O_RDONLY | O_NONBLOCK);
     int wfd = open(to_client, O_WRONLY);
+    if (is_duplicate_client(client_id)) {
+                    printf("[SERVER] Duplicate client '%s' ignored.\n", client_id);
+                    write(wfd, "Duplicate Client\n", 18);
+                    return;
+                }
 
     if (rfd < 0 || wfd < 0) {
         perror("open client FIFO");
@@ -151,11 +155,6 @@ int main() {
                 if (strlen(client_id) == 0) {
                 // printf("[SERVER] Ignored empty client ID\n");
                 continue;
-                }
-
-                if (is_duplicate_client(client_id)) {
-                    printf("[SERVER] Duplicate client '%s' ignored.\n", client_id);
-                    continue;
                 }
 
                 add_client(client_id);
