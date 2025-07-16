@@ -57,9 +57,11 @@ int is_duplicate_client(const char* client_id) {
 
 // Broadcast message to all clients except the sender
 void broadcast(const char *msg, const char *sender_id) {
+    char formatted_msg[MAX_MSG];
+    snprintf(formatted_msg,sizeof(formatted_msg),"[%s] : %s",sender_id,msg);
     for (int i = 0; i < client_count; i++) {
         if (clients[i].active && strcmp(clients[i].id, sender_id) != 0) {
-            write(clients[i].wfd, msg, strlen(msg));
+            write(clients[i].wfd, formatted_msg, strlen(formatted_msg));
         }
     }
 }

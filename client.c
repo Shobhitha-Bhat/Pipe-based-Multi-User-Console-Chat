@@ -90,7 +90,7 @@ void* read_from_server(void* arg) {
         int n = read(fd2, buffer, sizeof(buffer) - 1);
         if (n > 0) {
             buffer[n] = '\0';
-            printf("Server: %s", buffer);
+            printf("%s", buffer);
         } else if (n == 0) {
             printf("\n[Server disconnected. Exiting...]\n");
             exit(0);
