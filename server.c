@@ -66,6 +66,14 @@ void broadcast(const char *msg, const char *sender_id) {
     }
 }
 
+void broadcastexit(const char *msg,const char *sender_id) {
+    for (int i = 0; i < client_count; i++) {
+        if (clients[i].active && strcmp(clients[i].id, sender_id) != 0) {
+            write(clients[i].wfd, msg, strlen(msg));
+        }
+    }
+}
+
 
 // Add a new client dynamically
 void add_client(const char* client_id) {
@@ -167,8 +175,17 @@ int main() {
                 int n = read(clients[i].rfd, buffer, MAX_MSG);
                 if (n > 0) {
                     buffer[n] = '\0';
-                    printf("[%s]: %s", clients[i].id, buffer);
-                    broadcast(buffer, clients[i].id);
+                    if (strcmp(buffer, "/exit\n") == 0) {
+                        char exit_msg[MAX_MSG];
+                    snprintf(exit_msg, sizeof(exit_msg), "%s left the chat.\n", clients[i].id);
+
+                printf("[SERVER] %s", exit_msg);  // Server log
+                broadcastexit(exit_msg, clients[i].id); 
+                    }else{
+                        printf("efeee\n");
+                        printf("[%s]: %s", clients[i].id, buffer);
+                        broadcast(buffer, clients[i].id);
+                    }
                 } else if (n == 0) {
                     printf("[SERVER] %s disconnected\n", clients[i].id);
                     clients[i].active = 0;

@@ -85,7 +85,6 @@ typedef struct {
 } Client;
 
 int fd2; // global read end from server
-int server_stopped=0;
 
 void* read_from_server(void* arg) {
     char buffer[1024];
@@ -95,8 +94,7 @@ void* read_from_server(void* arg) {
             buffer[n] = '\0';
             printf("%s", buffer);
         } else if (n == 0) {
-            printf("\n[Server disconnected. Exiting...]\n");
-            server_stopped=1;
+            printf("\n[Server disconnected. You cannot chat anymore. Press Enter to exit.]\n");
             exit(0);
         } else {
             perror("Error reading from server");
@@ -200,27 +198,26 @@ int main() {
     pthread_t tid;
     if (pthread_create(&tid, NULL, read_from_server, NULL) != 0) {
         perror("Failed to create thread");
-        close(fd1);
+        close(fd1); 
         close(fd2);
         exit(EXIT_FAILURE);
     }
 
     char msg[1024];
-    while (!server_stopped) {
-        if (!(server_stopped) && fgets(msg, sizeof(msg), stdin) == NULL ) {
+    while (1) {
+        if (fgets(msg, sizeof(msg), stdin) == NULL ) {
             printf("[Input error. Exiting...]\n");
             break;
         }
 
         if (strcmp(msg, "/exit\n") == 0) {
-            const char* leave_msg = "Client is leaving\n";
-            write(fd1, leave_msg, strlen(leave_msg));
 
+            write(fd1, msg, strlen(msg));
             close(fd1);
             close(fd2);
             unlink(client.pipe_c2s);
             unlink(client.pipe_s2c);
-            printf("[Disconnected and cleaned up]\n");
+            printf("[Successfully Disconnected. ]\n");
             exit(0);
         }
 
