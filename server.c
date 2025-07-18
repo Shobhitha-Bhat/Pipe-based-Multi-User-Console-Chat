@@ -8,6 +8,8 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include <signal.h>
+
 
 #define MAX_MSG 256
 const char* get_fifo_dir() {
@@ -26,6 +28,44 @@ struct Client {
 struct Client* clients = NULL;
 struct pollfd* fds = NULL;
 int client_count = 0;
+
+
+
+
+int regfd;
+
+int reg_fd;  // Move this global if not already
+
+void cleanup(int signo) {
+    // printf("\n[SERVER] Caught signal %d, cleaning up...\n", signo);
+
+    // Close and unlink registration FIFO
+    close(reg_fd);
+    char reg_fifo_path[100];
+    snprintf(reg_fifo_path, sizeof(reg_fifo_path), "%s/registration_fifo", get_fifo_dir());
+    unlink(reg_fifo_path);
+
+    // Close all client FIFOs
+    for (int i = 0; i < client_count; i++) {
+        if (clients[i].active) {
+            close(clients[i].rfd);
+            close(clients[i].wfd);
+
+            char to_server[100], to_client[100];
+            snprintf(to_server, sizeof(to_server), "%s/%s_to_server", get_fifo_dir(), clients[i].id);
+            snprintf(to_client, sizeof(to_client), "%s/server_to_%s", get_fifo_dir(), clients[i].id);
+
+            unlink(to_server);
+            unlink(to_client);
+        }
+    }
+
+    free(clients);
+    free(fds);
+
+    printf("    Server Closed.\n");
+    exit(0);
+}
 
 void ensure_dir_exists(const char *path) {
     struct stat st = {0};
@@ -134,12 +174,13 @@ int main() {
     // Step 1: Ensure the base directory exists
     ensure_dir_exists(get_fifo_dir());
 
+    signal(SIGINT, cleanup);
     // Step 2: Create and open the registration FIFO
     char reg_fifo_path[100];
     snprintf(reg_fifo_path, sizeof(reg_fifo_path), "%s/registration_fifo", get_fifo_dir());
     create_fifo(reg_fifo_path);
 
-    int reg_fd = open(reg_fifo_path, O_RDONLY | O_NONBLOCK);
+    reg_fd = open(reg_fifo_path, O_RDONLY | O_NONBLOCK);
     if (reg_fd < 0) {
         perror("open registration_fifo");
         exit(EXIT_FAILURE);
