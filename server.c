@@ -74,6 +74,14 @@ void broadcastexit(const char *msg,const char *sender_id) {
     }
 }
 
+void broadcastjoin(const char *msg,const char *sender_id) {
+    for (int i = 0; i < client_count; i++) {
+        if (clients[i].active && strcmp(clients[i].id, sender_id) != 0) {
+            write(clients[i].wfd, msg, strlen(msg));
+        }
+    }
+}
+
 
 // Add a new client dynamically
 void add_client(const char* client_id) {
@@ -116,6 +124,9 @@ void add_client(const char* client_id) {
     fds[client_count + 1].events = POLLIN;
 
     printf("[SERVER] Added client: %s\n", client_id);
+    char msg[100];
+    snprintf(msg,sizeof(msg),"%s joined the chat\n",clients[client_count].id);
+    broadcastjoin(msg,clients[client_count].id);
     client_count++;
 }
 
@@ -182,7 +193,6 @@ int main() {
                 printf("[SERVER] %s", exit_msg);  // Server log
                 broadcastexit(exit_msg, clients[i].id); 
                     }else{
-                        printf("efeee\n");
                         printf("[%s]: %s", clients[i].id, buffer);
                         broadcast(buffer, clients[i].id);
                     }
@@ -191,6 +201,7 @@ int main() {
                     clients[i].active = 0;
                     close(clients[i].rfd);
                     close(clients[i].wfd);
+                   
                 }
             }
         }
