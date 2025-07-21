@@ -34,10 +34,10 @@ int client_count = 0;
 
 int regfd;
 
-int reg_fd;  // Move this global if not already
+int reg_fd;  
 
 void cleanup(int signo) {
-    // printf("\n[SERVER] Caught signal %d, cleaning up...\n", signo);
+    // printf("\n[SERVER] Caught signal %d, , signo);
 
     // Close and unlink registration FIFO
     close(reg_fd);
@@ -77,7 +77,7 @@ void ensure_dir_exists(const char *path) {
     }
 }
 
-// Create a FIFO at a specific path
+
 void create_fifo(const char *path) {
     unlink(path); // Remove if already exists
     if (mkfifo(path, 0666) == -1 && errno != EEXIST) {
@@ -95,12 +95,12 @@ int is_duplicate_client(const char* client_id) {
     return 0;
 }
 
-// Broadcast message to all clients except the sender
+
 void broadcast(const char *msg, const char *sender_id) {
     char formatted_msg[MAX_MSG];
     snprintf(formatted_msg,sizeof(formatted_msg),"[%s] : %s",sender_id,msg);
     for (int i = 0; i < client_count; i++) {
-        if (clients[i].active && strcmp(clients[i].id, sender_id) != 0) {
+        if (clients[i].active && strcmp(clients[i].id, sender_id) != 0) {  //broadcast to all except the sender
             write(clients[i].wfd, formatted_msg, strlen(formatted_msg));
         }
     }
@@ -122,8 +122,6 @@ void broadcastjoin(const char *msg,const char *sender_id) {
     }
 }
 
-
-// Add a new client dynamically
 void add_client(const char* client_id) {
     clients = realloc(clients, sizeof(struct Client) * (client_count + 1));
     fds = realloc(fds, sizeof(struct pollfd) * (client_count + 2)); // +1 for reg_fd
@@ -171,7 +169,7 @@ void add_client(const char* client_id) {
 }
 
 int main() {
-    // Step 1: Ensure the base directory exists
+    
     ensure_dir_exists(get_fifo_dir());
 
     signal(SIGINT, cleanup);
@@ -257,35 +255,3 @@ int main() {
     unlink(reg_fifo_path);
     return 0;
 }
-
-
-/*
-
-create server.sh and paste this
-#!/bin/bash
-
-# Define pipe directory (optional)
-PIPE_DIR="/tmp/chat_pipes"
-mkdir -p $PIPE_DIR
-
-# Set path for registration FIFO
-REG_FIFO="$PIPE_DIR/registration_fifo"
-
-# Remove old registration FIFO
-if [ -p "$REG_FIFO" ]; then
-    echo "Removing old registration FIFO..."
-    rm "$REG_FIFO"
-fi
-
-# Compile the server
-echo "Compiling server..."
-gcc -o server server.c
-
-# Export path so the server knows where to find FIFO
-export CHAT_PIPE_DIR="$PIPE_DIR"
-
-# Run the server
-echo "Starting server..."
-./server
-
-*/
