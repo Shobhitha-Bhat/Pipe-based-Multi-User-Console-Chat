@@ -238,7 +238,12 @@ int main() {
                         broadcast(buffer, clients[i].id);
                     }
                 } else if (n == 0) {
-                    printf("[SERVER] %s disconnected\n", clients[i].id);
+                    char exit_msg[MAX_MSG];
+                    snprintf(exit_msg, sizeof(exit_msg), "%s left the chat.\n", clients[i].id);
+
+                printf("[SERVER] %s", exit_msg);
+                    
+                    broadcastexit(exit_msg, clients[i].id); 
                     clients[i].active = 0;
                     close(clients[i].rfd);
                     close(clients[i].wfd);

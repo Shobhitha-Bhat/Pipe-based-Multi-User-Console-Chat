@@ -69,6 +69,7 @@ vi) loop(){
 #include <pthread.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <signal.h>
 
 
 
@@ -85,6 +86,28 @@ typedef struct {
 } Client;
 
 int fd2; // global read end from server
+int fd1;
+
+
+char pipe_c2s[256];  // Paths for cleanup
+char pipe_s2c[256];
+void handle_sigint(int sig) {
+    printf("\n[Stopped abruptly]\n");
+
+    if (fd1 != -1) {
+        
+        write(fd1, "/exit\n", strlen("/exit\n"));
+        close(fd1);
+    }
+    if (fd2 != -1) close(fd2);
+
+    unlink(pipe_c2s);
+    unlink(pipe_s2c);
+
+    printf("[Disconnected.]\n");
+    exit(0);
+}
+
 
 void* read_from_server(void* arg) {
     char buffer[1024];
@@ -183,7 +206,7 @@ int main() {
     }
     
     // Open client-to-server and server-to-client FIFOs
-    int fd1 = open(client.pipe_c2s, O_WRONLY);
+    fd1 = open(client.pipe_c2s, O_WRONLY);
     if (fd1 < 0) {
         perror("Error opening pipe to server");
         exit(EXIT_FAILURE);
@@ -204,6 +227,11 @@ int main() {
     }
 
     char msg[1024];
+    strcpy(pipe_c2s, client.pipe_c2s);
+strcpy(pipe_s2c, client.pipe_s2c);
+
+    signal(SIGINT, handle_sigint);  // Handle Ctrl+C
+
     while (1) {
         if (fgets(msg, sizeof(msg), stdin) == NULL ) {
             printf("[Input error. Exiting...]\n");
@@ -231,7 +259,7 @@ int main() {
             close(fd2);
             unlink(client.pipe_c2s);
             unlink(client.pipe_s2c);
-            printf("[Disconnected and cleaned up]\n");
+            printf("[Disconnected.]\n");
         
             
 
