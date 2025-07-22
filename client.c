@@ -169,6 +169,9 @@ strcpy(pipe_s2c, client.pipe_s2c);
             printf("[Successfully Disconnected. ]\n");
             exit(0);
         }
+        // else if(strcmp(msg ,"/members\n")==0){
+        //     write(fd1, msg, strlen(msg));
+        // }
 
         if (write(fd1, msg, strlen(msg)) < 0) {
             perror("Error writing to server");

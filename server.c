@@ -122,6 +122,23 @@ void broadcastjoin(const char *msg,const char *sender_id) {
     }
 }
 
+void list_members(const char *sender_id){
+    char members[1024]="Active Members:\n";
+    for (int i = 0; i < client_count; i++) {
+        if (clients[i].active && strcmp(clients[i].id, sender_id) != 0) {
+            strcat(members, clients[i].id);
+            strcat(members, "\n");
+        }
+    }
+    for (int i = 0; i < client_count; i++) {
+        if (clients[i].active && strcmp(clients[i].id, sender_id) == 0) {
+            write(clients[i].wfd, members, strlen(members));
+            break;
+        }
+    }
+}
+
+
 void add_client(const char* client_id) {
     clients = realloc(clients, sizeof(struct Client) * (client_count + 1));
     fds = realloc(fds, sizeof(struct pollfd) * (client_count + 2)); // +1 for reg_fd
@@ -227,19 +244,22 @@ int main() {
                     buffer[n] = '\0';
                     if (strcmp(buffer, "/exit\n") == 0) {
                         char exit_msg[MAX_MSG];
-                    snprintf(exit_msg, sizeof(exit_msg), "%s left the chat.\n", clients[i].id);
-
-                printf("[SERVER] %s", exit_msg);  // Server log
-                broadcastexit(exit_msg, clients[i].id); 
-                    }else{
+                        snprintf(exit_msg, sizeof(exit_msg), "%s left the chat.\n", clients[i].id);
+                        printf("[SERVER] %s", exit_msg);  // Server log
+                        broadcastexit(exit_msg, clients[i].id); 
+                    }else if(strcmp(buffer,"/members\n")==0){
+                        printf("Listing participants for %s\n",clients[i].id);
+                        list_members(clients[i].id);
+                    }
+                    
+                    else{
                         printf("[%s]: %s", clients[i].id, buffer);
                         broadcast(buffer, clients[i].id);
                     }
                 } else if (n == 0) {
                     char exit_msg[MAX_MSG];
                     snprintf(exit_msg, sizeof(exit_msg), "%s left the chat.\n", clients[i].id);
-
-                printf("[SERVER] %s", exit_msg);
+                    printf("[SERVER] %s", exit_msg);
                     
                     broadcastexit(exit_msg, clients[i].id); 
                     clients[i].active = 0;
