@@ -153,11 +153,9 @@ strcpy(pipe_s2c, client.pipe_s2c);
 
     signal(SIGINT, handle_sigint);  // Handle Ctrl+C
 
-    while (1) {
-        if (fgets(msg, sizeof(msg), stdin) == NULL ) {
-            printf("[Input error. Exiting...]\n");
-            break;
-        }
+    char multibuffer[1024];
+    int multiline=0;
+    while (fgets(msg, sizeof(msg), stdin) ) {
 
         if (strcmp(msg, "/exit\n") == 0) {
 
@@ -169,13 +167,26 @@ strcpy(pipe_s2c, client.pipe_s2c);
             printf("[Successfully Disconnected. ]\n");
             exit(0);
         }
-        // else if(strcmp(msg ,"/members\n")==0){
-        //     write(fd1, msg, strlen(msg));
-        // }
 
-        if (write(fd1, msg, strlen(msg)) < 0) {
+        else if(strcmp(msg,"/multiline\n")==0){
+            multiline=1;
+            printf("Enter multiline message. Type /send to send it.\n");
+            multibuffer[0] = '\0';
+            continue;
+        }
+        if(multiline){
+            if(strcmp(msg,"/send\n")==0){
+                multiline=0;
+                write(fd1, multibuffer, strlen(multibuffer));
+            }else{
+                strcat(multibuffer, msg);
+            }
+        }
+
+        else if(write(fd1, msg, strlen(msg)) < 0) {
             perror("Error writing to server");
         }
+
 
        
     }
@@ -189,3 +200,32 @@ strcpy(pipe_s2c, client.pipe_s2c);
 
     // return 0;
 }
+
+
+
+// while (1) {
+//         if (fgets(msg, sizeof(msg), stdin) == NULL ) {
+//             printf("[Input error. Exiting...]\n");
+//             break;
+//         }
+
+//         if (strcmp(msg, "/exit\n") == 0) {
+
+//             write(fd1, msg, strlen(msg));
+//             close(fd1);
+//             close(fd2);
+//             unlink(client.pipe_c2s);
+//             unlink(client.pipe_s2c);
+//             printf("[Successfully Disconnected. ]\n");
+//             exit(0);
+//         }
+
+//         if(strcmp(msg,"/multiline"))
+
+//         if (write(fd1, msg, strlen(msg)) < 0) {
+//             perror("Error writing to server");
+//         }
+
+
+       
+//     }

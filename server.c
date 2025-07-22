@@ -98,13 +98,16 @@ int is_duplicate_client(const char* client_id) {
 
 void broadcast(const char *msg, const char *sender_id) {
     char formatted_msg[MAX_MSG];
-    snprintf(formatted_msg,sizeof(formatted_msg),"[%s] : %s",sender_id,msg);
+    snprintf(formatted_msg,sizeof(formatted_msg),"\n[%s] : %s\n",sender_id,msg);
     for (int i = 0; i < client_count; i++) {
         if (clients[i].active && strcmp(clients[i].id, sender_id) != 0) {  //broadcast to all except the sender
             write(clients[i].wfd, formatted_msg, strlen(formatted_msg));
         }
     }
 }
+
+
+
 
 void broadcastexit(const char *msg,const char *sender_id) {
     for (int i = 0; i < client_count; i++) {
@@ -180,7 +183,7 @@ void add_client(const char* client_id) {
 
     printf("[SERVER] Added client: %s\n", client_id);
     char msg[100];
-    snprintf(msg,sizeof(msg),"%s joined the chat\n",clients[client_count].id);
+    snprintf(msg,sizeof(msg),"%s joined the chat\n\n",clients[client_count].id);
     broadcastjoin(msg,clients[client_count].id);
     client_count++;
 }
@@ -258,7 +261,7 @@ int main() {
                     }
                 } else if (n == 0) {
                     char exit_msg[MAX_MSG];
-                    snprintf(exit_msg, sizeof(exit_msg), "%s left the chat.\n", clients[i].id);
+                    snprintf(exit_msg, sizeof(exit_msg), "%s left the chat.\n\n", clients[i].id);
                     printf("[SERVER] %s", exit_msg);
                     
                     broadcastexit(exit_msg, clients[i].id); 
