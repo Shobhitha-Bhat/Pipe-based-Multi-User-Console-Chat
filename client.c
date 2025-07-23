@@ -41,7 +41,7 @@ void handle_sigint(int sig) {
 
     unlink(pipe_c2s);
     unlink(pipe_s2c);
-
+    
     printf("[Disconnected.]\n");
     exit(0);
 }
@@ -64,22 +64,92 @@ void* read_from_server(void* arg) {
     return NULL;
 }
 
+
+
+int is_duplicate_username(const char* username) {
+    FILE *f = fopen("/tmp/chat_pipes/active_clients.txt", "r");
+    if (!f) return 0;  // File doesn't exist = no clients yet
+
+    char line[100];
+    while (fgets(line, sizeof(line), f)) {
+        line[strcspn(line, "\n")] = '\0';  // remove newline
+        if (strcmp(line, username) == 0) {
+            fclose(f);
+            return 1;  // Duplicate found
+        }
+    }
+    fclose(f);
+    return 0;  // No match = safe to proceed
+}
+
+
+void remove_client_from_file(const char *client_name) {
+    FILE *src = fopen("active_clients.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+
+    if (!src || !temp) {
+        perror("Error opening file");
+        return;
+    }
+
+    char line[100];
+    while (fgets(line, sizeof(line), src)) {
+        // Trim newline
+        line[strcspn(line, "\n")] = '\0';
+
+        // Write all lines except the one to remove
+        if (strcmp(line, client_name) != 0) {
+            fprintf(temp, "%s\n", line);
+        }
+    }
+
+    fclose(src);
+    fclose(temp);
+
+    // Replace original file
+    remove("active_clients.txt");
+    rename("temp.txt", "active_clients.txt");
+}
+
 int main() {
     Client client;
 
-    
+    // while(1){
+
+    //     printf("Enter your username: ");
+    //     if (fgets(client.username, sizeof(client.username), stdin) == NULL) {
+    //         fprintf(stderr, "Failed to read username.\n");
+    //         exit(EXIT_FAILURE);
+    //     }
+        
+        
+    //     else if (strlen(client.username) == 0) {
+    //         fprintf(stderr, "Username cannot be empty.\n");
+    //         exit(EXIT_FAILURE);
+    //     }
+        
+    //     else if (is_duplicate_username(client.username)) {
+    //         printf("Username already in use. Try Again.\n");
+    //     }
+    //     else break;
+    // }
+    // client.username[strcspn(client.username, "\n")] = '\0'; // remove newline
+    char username[50];
+
+while (1) {
     printf("Enter your username: ");
-    if (fgets(client.username, sizeof(client.username), stdin) == NULL) {
-        fprintf(stderr, "Failed to read username.\n");
-        exit(EXIT_FAILURE);
-    }
-    client.username[strcspn(client.username, "\n")] = '\0'; // remove newline
+    fgets(username, sizeof(username), stdin);
+    username[strcspn(username, "\n")] = '\0';  // Remove newline
 
-    if (strlen(client.username) == 0) {
-        fprintf(stderr, "Username cannot be empty.\n");
-        exit(EXIT_FAILURE);
+    if (is_duplicate_username(username)) {
+        printf("❌ Username already in use. Please try again.\n");
+    } else {
+        break;  // Username is unique, exit loop
     }
+}
 
+// Now safe to proceed with this username
+strcpy(client.username, username);
     
     // Create FIFO pipe paths
     snprintf(client.pipe_c2s, sizeof(client.pipe_c2s), "%s/%s_to_server", get_fifo_dir(),client.username);
@@ -118,10 +188,11 @@ int main() {
     read(fd2, buf, sizeof(buf));  // should get "READY\n"
     if (strncmp(buf, "READY\n", 6) == 0) {
          ;
-    }else if(strncmp(buf, "Duplicate Client\n", 18) == 0){
-        printf("Duplicate Client. Exiting...\n");
-        exit(EXIT_FAILURE);
     }
+    // else if(strncmp(buf, "Duplicate Client\n", 18) == 0){
+    //     printf("Duplicate Client. Exiting...\n");
+    //     exit(EXIT_FAILURE);
+    // }
     else{
         printf("no reply from server");
         exit(EXIT_FAILURE);
@@ -164,6 +235,7 @@ strcpy(pipe_s2c, client.pipe_s2c);
             close(fd2);
             unlink(client.pipe_c2s);
             unlink(client.pipe_s2c);
+            remove_client_from_file(client.username);
             printf("[Successfully Disconnected. ]\n");
             exit(0);
         }

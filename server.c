@@ -40,6 +40,7 @@ void cleanup(int signo) {
     // printf("\n[SERVER] Caught signal %d, , signo);
 
     // Close and unlink registration FIFO
+    unlink("/tmp/chat_pipes/active_clients.txt");
     close(reg_fd);
     char reg_fifo_path[100];
     snprintf(reg_fifo_path, sizeof(reg_fifo_path), "%s/registration_fifo", get_fifo_dir());
@@ -85,6 +86,27 @@ void create_fifo(const char *path) {
         exit(EXIT_FAILURE);
     }
 }
+
+
+void create_file(){
+    //for every session file created
+    FILE *f = fopen("/tmp/chat_pipes/active_clients.txt", "a");
+    if (f) {
+    fprintf(f, "Active Clients: \n");
+    fclose(f);
+}
+}
+
+void append_to_active_clients_file(const char* client_id) {
+    FILE *f = fopen("/tmp/chat_pipes/active_clients.txt", "a");
+    if (f) {
+        fprintf(f, "%s\n", client_id);  // Write new client name
+        fclose(f);
+    } else {
+        perror("Could not write to active_clients.txt");
+    }
+}
+
 
 int is_duplicate_client(const char* client_id) {
     for (int i = 0; i < client_count; i++) {
@@ -162,7 +184,7 @@ void add_client(const char* client_id) {
     int wfd = open(to_client, O_WRONLY);
     if (is_duplicate_client(client_id)) {
                     printf("[SERVER] Duplicate client '%s' ignored.\n", client_id);
-                    write(wfd, "Duplicate Client\n", 18);
+                    // write(wfd, "Duplicate Client\n", 18);
                     return;
                 }
 
@@ -182,6 +204,7 @@ void add_client(const char* client_id) {
     fds[client_count + 1].events = POLLIN;
 
     printf("[SERVER] Added client: %s\n", client_id);
+    append_to_active_clients_file(client_id);
     char msg[100];
     snprintf(msg,sizeof(msg),"%s joined the chat\n\n",clients[client_count].id);
     broadcastjoin(msg,clients[client_count].id);
@@ -197,6 +220,9 @@ int main() {
     char reg_fifo_path[100];
     snprintf(reg_fifo_path, sizeof(reg_fifo_path), "%s/registration_fifo", get_fifo_dir());
     create_fifo(reg_fifo_path);
+
+
+    //function to make a new txt file for storing clients
 
     reg_fd = open(reg_fifo_path, O_RDONLY | O_NONBLOCK);
     if (reg_fd < 0) {
