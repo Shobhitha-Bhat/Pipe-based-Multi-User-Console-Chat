@@ -114,26 +114,7 @@ void remove_client_from_file(const char *client_name) {
 int main() {
     Client client;
 
-    // while(1){
-
-    //     printf("Enter your username: ");
-    //     if (fgets(client.username, sizeof(client.username), stdin) == NULL) {
-    //         fprintf(stderr, "Failed to read username.\n");
-    //         exit(EXIT_FAILURE);
-    //     }
-        
-        
-    //     else if (strlen(client.username) == 0) {
-    //         fprintf(stderr, "Username cannot be empty.\n");
-    //         exit(EXIT_FAILURE);
-    //     }
-        
-    //     else if (is_duplicate_username(client.username)) {
-    //         printf("Username already in use. Try Again.\n");
-    //     }
-    //     else break;
-    // }
-    // client.username[strcspn(client.username, "\n")] = '\0'; // remove newline
+    
     char username[50];
 
 while (1) {
@@ -142,7 +123,7 @@ while (1) {
     username[strcspn(username, "\n")] = '\0';  // Remove newline
 
     if (is_duplicate_username(username)) {
-        printf("❌ Username already in use. Please try again.\n");
+        printf(" Username already in use. Please try again.\n");
     } else {
         break;  // Username is unique, exit loop
     }
