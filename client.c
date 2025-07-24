@@ -84,8 +84,8 @@ int is_duplicate_username(const char* username) {
 
 
 void remove_client_from_file(const char *client_name) {
-    FILE *src = fopen("active_clients.txt", "r");
-    FILE *temp = fopen("temp.txt", "w");
+    FILE *src = fopen("/tmp/chat_pipes/active_clients.txt", "r");
+    FILE *temp = fopen("/tmp/chat_pipes/temp.txt", "w");
 
     if (!src || !temp) {
         perror("Error opening file");
@@ -107,8 +107,8 @@ void remove_client_from_file(const char *client_name) {
     fclose(temp);
 
     // Replace original file
-    remove("active_clients.txt");
-    rename("temp.txt", "active_clients.txt");
+    remove("/tmp/chat_pipes/active_clients.txt");
+    rename("/tmp/chat_pipes/temp.txt", "/tmp/chat_pipes/active_clients.txt");
 }
 
 int main() {
@@ -216,7 +216,7 @@ strcpy(pipe_s2c, client.pipe_s2c);
             close(fd2);
             unlink(client.pipe_c2s);
             unlink(client.pipe_s2c);
-            remove_client_from_file(client.username);
+            // remove_client_from_file(client.username);
             printf("[Successfully Disconnected. ]\n");
             exit(0);
         }
@@ -230,9 +230,22 @@ strcpy(pipe_s2c, client.pipe_s2c);
         if(multiline){
             if(strcmp(msg,"/send\n")==0){
                 multiline=0;
-                write(fd1, multibuffer, strlen(multibuffer));
-            }else{
+                // int len = strlen(multibuffer);
+                // if (len > 0 && multibuffer[len - 1] != '\n') {
+                //     strcat(multibuffer, "\n");
+                // }
+                if (strlen(multibuffer) >= 4000) {
+        printf("[Message too long. Limit to ~4000 characters.]\n");
+        continue;
+                }
+    write(fd1, multibuffer, strlen(multibuffer));
+}
+            else{
                 strcat(multibuffer, msg);
+    //             if (msg[strlen(msg) - 1] != '\n') {
+    // strcat(multibuffer, "\n");  // Add newline if not already there
+// }
+                // strcat(msg, "\n");
             }
         }
 

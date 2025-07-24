@@ -182,11 +182,11 @@ void add_client(const char* client_id) {
     // Prevent blocking on open(to_client, O_WRONLY)
     int dummy_fd = open(to_client, O_RDONLY | O_NONBLOCK);
     int wfd = open(to_client, O_WRONLY);
-    if (is_duplicate_client(client_id)) {
-                    printf("[SERVER] Duplicate client '%s' ignored.\n", client_id);
-                    // write(wfd, "Duplicate Client\n", 18);
-                    return;
-                }
+    // if (is_duplicate_client(client_id)) {
+    //                 printf("[SERVER] Duplicate client '%s' ignored.\n", client_id);
+    //                 // write(wfd, "Duplicate Client\n", 18);
+    //                 return;
+    //             }
 
     if (rfd < 0 || wfd < 0) {
         perror("open client FIFO");
@@ -210,6 +210,37 @@ void add_client(const char* client_id) {
     broadcastjoin(msg,clients[client_count].id);
     client_count++;
 }
+
+
+
+void remove_client_from_file(const char *client_name) {
+    FILE *src = fopen("/tmp/chat_pipes/active_clients.txt", "r");
+    FILE *temp = fopen("/tmp/chat_pipes/temp.txt", "w");
+
+    if (!src || !temp) {
+        perror("Error opening file");
+        return;
+    }
+
+    char line[100];
+    while (fgets(line, sizeof(line), src)) {
+        // Trim newline
+        line[strcspn(line, "\n")] = '\0';
+
+        // Write all lines except the one to remove
+        if (strcmp(line, client_name) != 0) {
+            fprintf(temp, "%s\n", line);
+        }
+    }
+
+    fclose(src);
+    fclose(temp);
+
+    // Replace original file
+    remove("/tmp/chat_pipes/active_clients.txt");
+    rename("/tmp/chat_pipes/temp.txt", "/tmp/chat_pipes/active_clients.txt");
+}
+
 
 int main() {
     
@@ -276,6 +307,7 @@ int main() {
                         snprintf(exit_msg, sizeof(exit_msg), "%s left the chat.\n", clients[i].id);
                         printf("[SERVER] %s", exit_msg);  // Server log
                         broadcastexit(exit_msg, clients[i].id); 
+                        remove_client_from_file(clients[i].id);
                     }else if(strcmp(buffer,"/members\n")==0){
                         printf("Listing participants for %s\n",clients[i].id);
                         list_members(clients[i].id);
