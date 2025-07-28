@@ -121,7 +121,7 @@ while (1) {
     printf("Enter your username: ");
     fgets(username, sizeof(username), stdin);
     username[strcspn(username, "\n")] = '\0';  // Remove newline
- if (strlen(client.username) == 0) {
+ if (strlen(username) == 0) {
             fprintf(stderr, "Username cannot be empty.\n");
             exit(EXIT_FAILURE);
         }
