@@ -121,8 +121,11 @@ while (1) {
     printf("Enter your username: ");
     fgets(username, sizeof(username), stdin);
     username[strcspn(username, "\n")] = '\0';  // Remove newline
-
-    if (is_duplicate_username(username)) {
+ if (strlen(client.username) == 0) {
+            fprintf(stderr, "Username cannot be empty.\n");
+            exit(EXIT_FAILURE);
+        }
+    else if (is_duplicate_username(username)) {
         printf(" Username already in use. Please try again.\n");
     } else {
         break;  // Username is unique, exit loop
