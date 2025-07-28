@@ -123,7 +123,6 @@ while (1) {
     username[strcspn(username, "\n")] = '\0';  // Remove newline
  if (strlen(username) == 0) {
             fprintf(stderr, "Username cannot be empty.\n");
-            exit(EXIT_FAILURE);
         }
     else if (is_duplicate_username(username)) {
         printf(" Username already in use. Please try again.\n");
