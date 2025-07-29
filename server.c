@@ -108,15 +108,6 @@ void append_to_active_clients_file(const char* client_id) {
 }
 
 
-int is_duplicate_client(const char* client_id) {
-    for (int i = 0; i < client_count; i++) {
-        if (clients[i].active && strcmp(clients[i].id, client_id) == 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 
 void broadcast(const char *msg, const char *sender_id) {
     char formatted_msg[MAX_MSG];
@@ -183,11 +174,7 @@ void add_client(const char* client_id) {
     // Prevent blocking on open(to_client, O_WRONLY)
     int dummy_fd = open(to_client, O_RDONLY | O_NONBLOCK);
     int wfd = open(to_client, O_WRONLY);
-    // if (is_duplicate_client(client_id)) {
-    //                 printf("[SERVER] Duplicate client '%s' ignored.\n", client_id);
-    //                 // write(wfd, "Duplicate Client\n", 18);
-    //                 return;
-    //             }
+   
 
     if (rfd < 0 || wfd < 0) {
         perror("open client FIFO");
